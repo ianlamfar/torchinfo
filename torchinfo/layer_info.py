@@ -294,6 +294,24 @@ class LayerInfo:
         if params == 0:
             return zero
         return f"{params / total_params:>{precision + spacing}.{precision}%}"
+    
+    def macs_percent(
+        self, total_macs: int, reached_max_depth: bool, precision: int = 3
+    ) -> str:
+        """Convert num_params to string."""
+        spacing = precision + 3
+        zero = f"{' ' * spacing}--"
+
+        if self.macs <= 0:
+            return zero
+        if self.is_leaf_layer:
+            return f"{self.macs / total_macs :>{precision + spacing}.{precision}%}"
+        if reached_max_depth:
+            sum_child_macs = sum(
+                child.macs for child in self.children if child.is_leaf_layer
+            )
+            return f"{sum_child_macs / total_macs :>{precision + spacing}.{precision}%}"
+        return zero
 
     def leftover_params(self) -> int:
         """

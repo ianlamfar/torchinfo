@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-from enum import Enum, IntEnum, unique
+from enum import Enum, IntEnum, unique, StrEnum
 
 
 @unique
-class Mode(str, Enum):
+class Mode(StrEnum):
     """Enum containing all model modes."""
 
     __slots__ = ()
@@ -14,7 +14,7 @@ class Mode(str, Enum):
 
 
 @unique
-class RowSettings(str, Enum):
+class RowSettings(StrEnum):
     """Enum containing all available row settings."""
 
     __slots__ = ()
@@ -26,7 +26,7 @@ class RowSettings(str, Enum):
 
 
 @unique
-class ColumnSettings(str, Enum):
+class ColumnSettings(StrEnum):
     """Enum containing all available column settings."""
 
     __slots__ = ()
@@ -37,19 +37,26 @@ class ColumnSettings(str, Enum):
     NUM_PARAMS = "num_params"
     PARAMS_PERCENT = "params_percent"
     MULT_ADDS = "mult_adds"
+    MULT_ADDS_PERCENT = "mult_adds_percent"
     TRAINABLE = "trainable"
 
 
 @unique
-class Units(str, Enum):
+class Units(StrEnum):
     """Enum containing all available bytes units."""
 
     __slots__ = ()
 
     AUTO = "auto"
-    MEGABYTES = "M"
-    GIGABYTES = "G"
-    TERABYTES = "T"
+    BYTES = "B"
+    KILOBYTES = "KB"
+    MEGABYTES = "MB"
+    GIGABYTES = "GB"
+    TERABYTES = "TB"
+    KILO = "K"
+    MEGA = "M"
+    GIGA = "G"
+    TERA = "T"
     NONE = ""
 
 

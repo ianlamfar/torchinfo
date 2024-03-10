@@ -60,7 +60,7 @@ class ModelStatistics:
         non_trainable_params = ModelStatistics.format_output_num(
             self.total_params - self.trainable_params, self.formatting.params_units
         )
-        all_layers = self.formatting.layers_to_str(self.summary_list, self.total_params)
+        all_layers = self.formatting.layers_to_str(self.summary_list, self.total_params, self.total_mult_adds)
         summary_str = (
             f"{divider}\n"
             f"{self.formatting.header_row()}{divider}\n"
@@ -73,18 +73,27 @@ class ModelStatistics:
             macs = ModelStatistics.format_output_num(
                 self.total_mult_adds, self.formatting.macs_units
             )
-            input_size = self.to_megabytes(self.total_input)
-            output_bytes = self.to_megabytes(self.total_output_bytes)
-            param_bytes = self.to_megabytes(self.total_param_bytes)
-            total_bytes = self.to_megabytes(
-                self.total_input + self.total_output_bytes + self.total_param_bytes
-            )
+            # input_size = self.to_megabytes(self.total_input)
+            # output_bytes = self.to_megabytes(self.total_output_bytes)
+            # param_bytes = self.to_megabytes(self.total_param_bytes)
+            # total_bytes = self.to_megabytes(self.total_input + self.total_output_bytes + self.total_param_bytes)
+            # summary_str += (
+            #     f"Total mult-adds{macs}\n{divider}\n"
+            #     f"Input size (MB): {input_size:0.2f}\n"
+            #     f"Forward/backward pass size (MB): {output_bytes:0.2f}\n"
+            #     f"Params size (MB): {param_bytes:0.2f}\n"
+            #     f"Estimated Total Size (MB): {total_bytes:0.2f}\n"
+            # )
+            input_size = self.to_readable_bytes(self.total_input)
+            output_bytes = self.to_readable_bytes(self.total_output_bytes)
+            param_bytes = self.to_readable_bytes(self.total_param_bytes)
+            total_bytes = self.to_readable_bytes(self.total_input + self.total_output_bytes + self.total_param_bytes)
             summary_str += (
                 f"Total mult-adds{macs}\n{divider}\n"
-                f"Input size (MB): {input_size:0.2f}\n"
-                f"Forward/backward pass size (MB): {output_bytes:0.2f}\n"
-                f"Params size (MB): {param_bytes:0.2f}\n"
-                f"Estimated Total Size (MB): {total_bytes:0.2f}\n"
+                f"Input size ({input_size[0]}): {input_size[1]:0.2f}\n"
+                f"Forward/backward pass size ({output_bytes[0]}): {output_bytes[1]:0.2f}\n"
+                f"Params size ({param_bytes[0]}): {param_bytes[1]:0.2f}\n"
+                f"Estimated Total Size ({total_bytes[0]}): {total_bytes[1]:0.2f}\n"
             )
         summary_str += divider
         return summary_str
@@ -92,22 +101,42 @@ class ModelStatistics:
     @staticmethod
     def float_to_megabytes(num: int) -> float:
         """Converts a number (assume floats, 4 bytes each) to megabytes."""
-        return num * 4 / 1e6
+        return num * 4 / (1024 ** 2)
 
     @staticmethod
     def to_megabytes(num: int) -> float:
         """Converts bytes to megabytes."""
-        return num / 1e6
+        return num / (1024 ** 2)
 
     @staticmethod
-    def to_readable(num: int, units: Units = Units.AUTO) -> tuple[Units, float]:
+    def to_readable_bytes(num: int, units: Units = Units.AUTO) -> tuple[Units, str, float]:
+        """Converts a number to millions, billions, or trillions."""
+        if units == Units.AUTO:
+            if num >= (1024 ** 4):
+                return Units.TERABYTES, num / (1024 ** 4)
+            elif num >= (1024 ** 3):
+                return Units.GIGABYTES, num / (1024 ** 3)
+            elif num >= (1024 ** 2):
+                return Units.MEGABYTES, num / (1024 ** 2)
+            elif num >= 1024:
+                return Units.KILOBYTES, num / 1024
+            else:
+                return Units.BYTES, num
+        return units, num / CONVERSION_FACTORS[units]
+    
+    def to_readable(num: int, units: Units = Units.AUTO) -> tuple[Units, str, float]:
         """Converts a number to millions, billions, or trillions."""
         if units == Units.AUTO:
             if num >= 1e12:
-                return Units.TERABYTES, num / 1e12
+                return Units.TERA, num / 1e12
             if num >= 1e9:
-                return Units.GIGABYTES, num / 1e9
-            return Units.MEGABYTES, num / 1e6
+                return Units.GIGA, num / 1e9
+            if num >= 1e6:
+                return Units.MEGA, num / 1e6
+            if num >= 1e3:
+                return Units.KILO, num / 1e3
+            else:
+                return Units.NONE, num
         return units, num / CONVERSION_FACTORS[units]
 
     @staticmethod

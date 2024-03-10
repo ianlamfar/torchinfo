@@ -12,13 +12,20 @@ HEADER_TITLES = {
     ColumnSettings.OUTPUT_SIZE: "Output Shape",
     ColumnSettings.NUM_PARAMS: "Param #",
     ColumnSettings.PARAMS_PERCENT: "Param %",
-    ColumnSettings.MULT_ADDS: "Mult-Adds",
+    ColumnSettings.MULT_ADDS: "Mult-Adds #",
+    ColumnSettings.MULT_ADDS_PERCENT: "Mult-Adds %",
     ColumnSettings.TRAINABLE: "Trainable",
 }
 CONVERSION_FACTORS = {
-    Units.TERABYTES: 1e12,
-    Units.GIGABYTES: 1e9,
-    Units.MEGABYTES: 1e6,
+    Units.TERABYTES: (1024 ** 4),
+    Units.GIGABYTES: (1024 ** 3),
+    Units.MEGABYTES: (1024 ** 2),
+    Units.KILOBYTES: 1024,
+    Units.BYTES: 1,
+    Units.TERA: 1e12,
+    Units.GIGA: 1e9,
+    Units.MEGA: 1e6,
+    Units.KILO: 1e3,
     Units.NONE: 1,
 }
 
@@ -100,7 +107,7 @@ class FormattingOptions:
         return self.format_row(f"Layer (type{layer_header})", HEADER_TITLES)
 
     def layer_info_to_row(
-        self, layer_info: LayerInfo, reached_max_depth: bool, total_params: int
+        self, layer_info: LayerInfo, reached_max_depth: bool, total_params: int, total_macs: int
     ) -> str:
         """Convert layer_info to string representation of a row."""
         values_for_row = {
@@ -112,6 +119,7 @@ class FormattingOptions:
                 total_params, reached_max_depth
             ),
             ColumnSettings.MULT_ADDS: layer_info.macs_to_str(reached_max_depth),
+            self, layer_info: LayerInfo, reached_max_depth: bool, total_params: int, total_macs: int
             ColumnSettings.TRAINABLE: self.str_(layer_info.trainable),
         }
         start_str = self.get_start_str(layer_info.depth)
@@ -124,7 +132,7 @@ class FormattingOptions:
                 new_line += self.format_row(f"{prefix}{inner_name}", inner_layer_info)
         return new_line
 
-    def layers_to_str(self, summary_list: list[LayerInfo], total_params: int) -> str:
+    def layers_to_str(self, summary_list: list[LayerInfo], total_params: int, total_macs: int) -> str:
         """
         Print each layer of the model using only current layer info.
         Container modules are already dealt with in add_missing_container_layers.
@@ -140,6 +148,6 @@ class FormattingOptions:
 
             reached_max_depth = layer_info.depth == self.max_depth
             new_str += self.layer_info_to_row(
-                layer_info, reached_max_depth, total_params
+                layer_info, reached_max_depth, total_params, total_macs
             )
         return new_str
