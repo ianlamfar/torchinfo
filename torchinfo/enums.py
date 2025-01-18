@@ -11,6 +11,7 @@ class Mode(StrEnum):
 
     TRAIN = "train"
     EVAL = "eval"
+    SAME = "same"
 
 
 @unique
@@ -32,6 +33,7 @@ class ColumnSettings(StrEnum):
     __slots__ = ()
 
     KERNEL_SIZE = "kernel_size"
+    GROUPS = "groups"
     INPUT_SIZE = "input_size"
     OUTPUT_SIZE = "output_size"
     NUM_PARAMS = "num_params"

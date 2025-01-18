@@ -1,6 +1,5 @@
 from typing import Any
 
-import numpy as np
 import torch
 from torch import nn
 from torch.nn.utils import prune
@@ -26,7 +25,6 @@ from tests.fixtures.models import (
     ModuleDictModel,
     MultipleInputNetDifferentDtypes,
     NamedTuple,
-    NumpyModel,
     PackPaddedLSTM,
     ParameterFCNet,
     ParameterListModel,
@@ -134,6 +132,33 @@ def test_single_input_all_cols() -> None:
         input_data=torch.randn(*input_shape),
         depth=1,
         col_names=list(ColumnSettings),
+        col_width=20,
+    )
+
+
+def test_groups() -> None:
+    input_shape = (7, 16, 28, 28)
+    module = nn.Conv2d(16, 32, 3, groups=4)
+    col_names = ("kernel_size", "groups", "input_size", "output_size", "num_params", "mult_adds")
+    summary(
+        module,
+        input_data=torch.randn(*input_shape),
+        depth=1,
+        col_names=col_names,
+        col_width=20,
+    )
+
+
+def test_linear() -> None:
+    input_shape = (32, 16, 8)
+    module = nn.Linear(8, 64)
+    col_names = ("input_size", "output_size", "num_params", "mult_adds")
+    input_data = torch.randn(*input_shape)
+    summary(
+        module,
+        input_data=input_data,
+        depth=1,
+        col_names=col_names,
         col_width=20,
     )
 
@@ -426,11 +451,6 @@ def test_namedtuple() -> None:
     # explicitly use cpu to prevent mixed device
     # when cuda is available
     summary(model, input_size=input_size, z=named_tuple, device=torch.device("cpu"))
-
-
-def test_numpy_model() -> None:
-    model = NumpyModel()
-    summary(model, input_data=np.ones(3, dtype=np.float32))
 
 
 def test_return_dict() -> None:

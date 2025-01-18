@@ -62,7 +62,7 @@ def summary(
     depth: int = 3,
     device: torch.device | str | None = None,
     dtypes: list[torch.dtype] | None = None,
-    mode: str | None = None,
+    mode: str = "same",
     row_settings: Iterable[str] | None = None,
     verbose: int | None = None,
     **kwargs: Any,
@@ -125,6 +125,7 @@ def summary(
                     "num_params",
                     "params_percent",
                     "kernel_size",
+                    "groups",
                     "mult_adds",
                     "mult_adds_percent",
                     "trainable",
@@ -156,9 +157,10 @@ def summary(
                 Default: None
 
         mode (str)
-                Either "train" or "eval", which determines whether we call
-                model.train() or model.eval() before calling summary().
-                Default: "eval".
+                Either "train", "eval" or "same", which determines whether we call
+                model.train() or model.eval() before calling summary(). In any case,
+                original model mode is restored at the end.
+                Default: "same".
 
         row_settings (Iterable[str]):
                 Specify which features to show in a row. Currently supported: (
@@ -198,10 +200,7 @@ def summary(
     else:
         rows = {RowSettings(name) for name in row_settings}
 
-    if mode is None:
-        model_mode = Mode.EVAL
-    else:
-        model_mode = Mode(mode)
+    model_mode = Mode(mode)
 
     if verbose is None:
         verbose = 0 if hasattr(sys, "ps1") and sys.ps1 else 1
@@ -286,7 +285,7 @@ def forward_pass(
             model.train()
         elif mode == Mode.EVAL:
             model.eval()
-        else:
+        elif mode != Mode.SAME:
             raise RuntimeError(
                 f"Specified model mode ({list(Mode)}) not recognized: {mode}"
             )
@@ -485,7 +484,7 @@ def get_device(
             model_parameter = None
 
         if model_parameter is not None and model_parameter.is_cuda:
-            return model_parameter.device  # type: ignore[no-any-return]
+            return model_parameter.device
         return torch.device("cuda" if torch.cuda.is_available() else "cpu")
     return None
 

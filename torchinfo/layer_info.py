@@ -57,6 +57,7 @@ class LayerInfo:
         self.input_size: list[int] = []
         self.output_size: list[int] = []
         self.kernel_size = self.get_kernel_size(module)
+        self.groups = self.get_groups(module)
         self.trainable_params = 0
         self.num_params = 0
         self.param_bytes = 0
@@ -119,8 +120,8 @@ class LayerInfo:
             size = list(inputs.size())
             elem_bytes = inputs.element_size()
 
-        elif isinstance(inputs, np.ndarray):
-            inputs_ = torch.from_numpy(inputs)
+        elif isinstance(inputs, np.ndarray):  # type: ignore[unreachable]
+            inputs_ = torch.from_numpy(inputs)  # type: ignore[unreachable]
             size, elem_bytes = list(inputs_.size()), inputs_.element_size()
 
         elif isinstance(inputs, (list, tuple)):
@@ -167,6 +168,12 @@ class LayerInfo:
             else:
                 raise TypeError(f"kernel_size has an unexpected type: {type(k)}")
             return kernel_size
+        return None
+
+    @staticmethod
+    def get_groups(module: nn.Module) -> int | None:
+        if hasattr(module, "groups"):
+            return int(module.groups)
         return None
 
     def get_layer_name(self, show_var_name: bool, show_depth: bool) -> str:
@@ -217,9 +224,9 @@ class LayerInfo:
                 final_name = name
         # Fix the final row to display more nicely
         if self.inner_layers:
-            self.inner_layers[final_name][
-                ColumnSettings.NUM_PARAMS
-            ] = f"└─{self.inner_layers[final_name][ColumnSettings.NUM_PARAMS][2:]}"
+            self.inner_layers[final_name][ColumnSettings.NUM_PARAMS] = (
+                f"└─{self.inner_layers[final_name][ColumnSettings.NUM_PARAMS][2:]}"
+            )
 
     def calculate_macs(self) -> None:
         """
@@ -237,6 +244,8 @@ class LayerInfo:
                     self.macs += int(
                         cur_params * prod(self.output_size[:1] + self.output_size[2:])
                     )
+                elif "Linear" in self.class_name:
+                    self.macs += int(cur_params * prod(self.output_size[:-1]))
                 else:
                     self.macs += self.output_size[0] * cur_params
             # RNN modules have inner weights such as weight_ih_l0
@@ -340,8 +349,9 @@ def nested_list_size(inputs: Sequence[Any] | torch.Tensor) -> tuple[list[int], i
         size, elem_bytes = nested_list_size(inputs.tensors)
     elif isinstance(inputs, torch.Tensor):
         size, elem_bytes = list(inputs.size()), inputs.element_size()
-    elif isinstance(inputs, np.ndarray):
-        inputs_torch = torch.from_numpy(inputs)  # preserves dtype
+    elif isinstance(inputs, np.ndarray):  # type: ignore[unreachable]
+        # preserves dtype
+        inputs_torch = torch.from_numpy(inputs)  # type: ignore[unreachable]
         size, elem_bytes = list(inputs_torch.size()), inputs_torch.element_size()
     elif not hasattr(inputs, "__getitem__") or not inputs:
         size, elem_bytes = [], 0
@@ -376,8 +386,8 @@ def rgetattr(module: nn.Module, attr: str) -> torch.Tensor | None:
         if not hasattr(module, attr_i):
             return None
         module = getattr(module, attr_i)
-    assert isinstance(module, torch.Tensor)
-    return module
+    assert isinstance(module, torch.Tensor)  # type: ignore[unreachable]
+    return module  # type: ignore[unreachable]
 
 
 def get_children_layers(summary_list: list[LayerInfo], index: int) -> list[LayerInfo]:
